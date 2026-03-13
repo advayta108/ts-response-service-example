@@ -1,4 +1,3 @@
-import { Database } from "bun:sqlite";
 import { readFileSync, mkdirSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { getSqliteFilePath } from "../src/lib/sqlitePath";
@@ -11,8 +10,27 @@ const sql = readFileSync(
   join(process.cwd(), "drizzle", "0000_init.sql"),
   "utf-8"
 );
-const db = new Database(dbPath, { create: true });
-db.exec("PRAGMA foreign_keys = ON;");
-db.exec(sql);
-db.close();
+
+function migrateWithBetterSqlite() {
+  const BetterSqlite =
+    require("better-sqlite3") as typeof import("better-sqlite3");
+  const db = new BetterSqlite(dbPath);
+  db.pragma("foreign_keys = ON");
+  db.exec(sql);
+  db.close();
+}
+
+function migrateWithBun() {
+  const { Database } = require("bun:sqlite");
+  const db = new Database(dbPath, { create: true });
+  db.exec("PRAGMA foreign_keys = ON;");
+  db.exec(sql);
+  db.close();
+}
+
+try {
+  migrateWithBun();
+} catch {
+  migrateWithBetterSqlite();
+}
 console.log("Migrations OK:", dbPath);

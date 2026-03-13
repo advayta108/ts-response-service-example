@@ -76,10 +76,12 @@ Or: `make install`
 **What you run:** a small **repair-request** demo — dispatcher / master UIs, SQLite DB, SSE toasts. No Supabase required locally.
 
 ```bash
-bun run db:migrate
-bun run db:seed   # optional demo users + requests
-bun run dev
+bun run db:migrate   # SQLite ./data/app.db (идемпотентно)
+bun run db:seed      # dispatcher/disp123, мастера, заявки
+bun run dev          # или: npx next dev — SQLite через better-sqlite3 (без Postgres в .env)
 ```
+
+**Локально без Postgres:** в `.env` **не** задавай `DATABASE_URL` с `postgres://`. Иначе приложение ходит в Supabase, а не в SQLite.
 
 → [http://localhost:3000](http://localhost:3000)
 

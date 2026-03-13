@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "bun run db:migrate",
     "dev": "bun run --bun next dev",
     "build": "next build",
     "start": "bun run --bun next start",
@@ -17,6 +18,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml,css}\" --ignore-path .gitignore"
   },
   "dependencies": {
+    "better-sqlite3": "^12.6.2",
     "drizzle-orm": "^0.39.3",
     "next": "^15.1.0",
     "pg": "^8.20.0",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@eslint/js": "^9.16.0",
     "@tailwindcss/postcss": "^4.0.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "latest",
     "@types/node": "^22.10.0",
     "@types/pg": "^8.18.0",

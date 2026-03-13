@@ -23,7 +23,8 @@ export function isPostgres(): boolean {
   return isPostgresConnectionEnv();
 }
 
-let _sqliteDb: BunSQLiteDatabase<typeof schemaSqlite> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _sqliteDb: any = null;
 let _sqlite: (SqliteConn & { exec: (sql: string) => void }) | null = null;
 let _pool: Pool | null = null;
 let _pgDb: ReturnType<typeof drizzlePg> | null = null;
@@ -33,27 +34,68 @@ function ensureDir(filePath: string) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
-async function loadSqliteDb() {
+function wrapBetterRaw(raw: {
+  exec: (s: string) => void;
+  prepare: (sql: string) => {
+    run: (...a: unknown[]) => { changes: number };
+    get: (...a: unknown[]) => unknown;
+  };
+}): SqliteConn & { exec: (sql: string) => void } {
+  return {
+    exec: (s) => raw.exec(s),
+    run: (sql, params) => ({
+      changes: raw.prepare(sql).run(...(params ?? [])).changes,
+    }),
+    query: (sql) => ({
+      get: (...args) => raw.prepare(sql).get(...args),
+    }),
+  };
+}
+
+/** SQLite: Bun (bun dev) или better-sqlite3 (next dev на Node). */
+async function loadSqliteDb(): Promise<BunSQLiteDatabase<typeof schemaSqlite>> {
   if (isPostgres())
     throw new Error(
       "SQLite недоступен при Postgres; используйте getDbContext()"
     );
   if (!_sqliteDb) {
-    const { Database } = await import(/* webpackIgnore: true */ "bun:sqlite");
-    const { drizzle: drizzleSqlite } = await import(
-      /* webpackIgnore: true */ "drizzle-orm/bun-sqlite"
-    );
     ensureDir(dbPath);
-    _sqlite = new Database(dbPath, { create: true }) as SqliteConn & {
-      exec: (sql: string) => void;
-    };
+    let bunOk = false;
     try {
-      _sqlite.exec("PRAGMA journal_mode = WAL;");
+      const { Database } = await import(/* webpackIgnore: true */ "bun:sqlite");
+      const { drizzle: drizzleSqlite } = await import(
+        /* webpackIgnore: true */ "drizzle-orm/bun-sqlite"
+      );
+      _sqlite = new Database(dbPath, { create: true }) as SqliteConn & {
+        exec: (sql: string) => void;
+      };
+      try {
+        _sqlite.exec("PRAGMA journal_mode = WAL;");
+      } catch {
+        /* ignore */
+      }
+      _sqlite.exec("PRAGMA foreign_keys = ON;");
+      _sqliteDb = drizzleSqlite(_sqlite as never, { schema: schemaSqlite });
+      bunOk = true;
     } catch {
-      /* ignore */
+      /* Node / next dev — нет bun:sqlite */
     }
-    _sqlite.exec("PRAGMA foreign_keys = ON;");
-    _sqliteDb = drizzleSqlite(_sqlite as never, { schema: schemaSqlite });
+    if (!bunOk) {
+      const BetterSqlite = (
+        await import(/* webpackIgnore: true */ "better-sqlite3")
+      ).default;
+      const raw = new BetterSqlite(dbPath);
+      try {
+        raw.pragma("journal_mode = WAL");
+      } catch {
+        /* ignore */
+      }
+      raw.pragma("foreign_keys = ON");
+      const { drizzle: drizzleBetter } =
+        await import("drizzle-orm/better-sqlite3");
+      _sqlite = wrapBetterRaw(raw as never);
+      _sqliteDb = drizzleBetter(raw as never, { schema: schemaSqlite });
+    }
   }
   return _sqliteDb;
 }
@@ -74,11 +116,9 @@ export async function getPgPool(): Promise<Pool> {
     const connectionString = getPostgresConnectionString();
     _pool = new Pool({
       connectionString,
-      // Serverless: меньше висящих коннектов; пулер Supabase всё равно пулит
       max: process.env.VERCEL === "1" ? 3 : 5,
       connectionTimeoutMillis: 20_000,
       idleTimeoutMillis: process.env.VERCEL === "1" ? 10_000 : 30_000,
-      // Supabase без этого на Vercel часто даёт ECONNREFUSED / SSL
       ...(postgresNeedsSsl(connectionString)
         ? { ssl: { rejectUnauthorized: false } }
         : {}),
@@ -98,7 +138,7 @@ export type DbContext =
   | {
       driver: "sqlite";
       db: Awaited<ReturnType<typeof loadSqliteDb>>;
-      sqlite: SqliteConn; // runtime: Bun Database
+      sqlite: SqliteConn;
       schema: typeof schemaSqlite;
     }
   | {
