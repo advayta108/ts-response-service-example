@@ -1,0 +1,68 @@
+name: "🐛 Bug Report"
+description: Сообщить об ошибке в ts-response-service-example
+title: "🐛 [BUG] - <title>"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Описание"
+      description: Что пошло не так
+    validations:
+      required: true
+  - type: input
+    id: reprod-url
+    attributes:
+      label: "URL / репозиторий"
+      description: Ссылка на деплой или репозиторий с воспроизведением
+      placeholder: "https://github.com/advayta108/ts-response-service-example"
+    validations:
+      required: false
+  - type: textarea
+    id: reprod
+    attributes:
+      label: "Шаги воспроизведения"
+      value: |
+        1. Открыть '...'
+        2. Нажать '....'
+        3. Ожидание / фактический результат
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "Скриншоты"
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Логи"
+      render: bash
+    validations:
+      required: false
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: "Браузер"
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Safari
+        - Microsoft Edge
+        - Opera
+    validations:
+      required: false
+  - type: dropdown
+    id: os
+    attributes:
+      label: "ОС"
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - Mac
+    validations:
+      required: false

@@ -1,0 +1,42 @@
+# Миграции Supabase при push main. Деплой — интеграция Vercel↔GitHub (без VERCEL_TOKEN).
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrate-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Migrate PostgreSQL
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          POSTGRES_URL_NON_POOLING: ${{ secrets.POSTGRES_URL_NON_POOLING }}
+        run: |
+          P="${DATABASE_URL:-}${POSTGRES_URL_NON_POOLING:-}${POSTGRES_URL:-}"
+          if [ -z "$P" ] || ! echo "$P" | grep -q 'postgres'; then
+            echo "::notice::Skip migrate — DATABASE_URL или POSTGRES_URL*"
+            exit 0
+          fi
+          bun run db:migrate:pg
+      - name: Seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          POSTGRES_URL_NON_POOLING: ${{ secrets.POSTGRES_URL_NON_POOLING }}
+          RUN_SEED: ${{ secrets.RUN_SEED }}
+        run: |
+          [ "$RUN_SEED" = "true" ] || exit 0
+          P="${DATABASE_URL:-}${POSTGRES_URL_NON_POOLING:-}${POSTGRES_URL:-}"
+          [ -n "$P" ] && echo "$P" | grep -q 'postgres' && bun run db:seed:pg || true

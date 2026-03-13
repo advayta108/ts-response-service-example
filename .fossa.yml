@@ -1,0 +1,54 @@
+# FOSSA — https://app.fossa.com (проект привязан в профиле)
+# Locator: custom+<ORG_ID>/github.com/<owner>/<repo> — ORG_ID из FOSSA → Settings → Organization
+version: 3
+
+project:
+  # Ссылка на анализ в FOSSA: https://app.fossa.com/projects/custom%2B41348%2Fgithub.com%2Fadvayta108%2Fts-response-service-example
+  locator: custom+41348/github.com/advayta108/ts-response-service-example
+  name: ts-response-service-example
+  url: https://github.com/advayta108/ts-response-service-example
+
+# CC-BY-SA-4.0: Next bundles glob LICENSE (logo) — см. NOTICE.md
+policy:
+  allowed:
+    - MIT
+    - Apache-2.0
+    - ISC
+    - BSD-3-Clause
+    - BSD-2-Clause
+    - 0BSD
+    - MPL-2.0
+    - Python-2.0
+    - CC-BY-4.0
+    - CC-BY-SA-4.0
+    - CC0-1.0
+    - Unlicense
+    - LGPL-3.0-or-later
+    - FTL
+  ignored:
+    licenses:
+      - LGPL-3.0-or-later
+      - MPL-2.0
+  excludeDependencies:
+    - "@img/sharp-libvips-*"
+    - "@img/sharp-wasm32"
+    - "@img/sharp-win32-*"
+    - "@img/sharp-darwin-*"
+    - "@img/sharp-linux-*"
+
+exclude:
+  - "node_modules/**"
+  - ".next/**"
+  - "out/**"
+  - "build/**"
+  - ".git/**"
+
+# Зависимости из package.json (Bun; при необходимости FOSSA CLI: fossa analyze)
+npm:
+  strategy: npm
+  exclude:
+    - "@img/sharp-libvips-*"
+    - "@img/sharp-wasm32"
+    - "@img/sharp-win32-*"
+    - "@img/sharp-darwin-*"
+    - "@img/sharp-linux-*"
