@@ -102,11 +102,15 @@ Or: `make build` · `make test`
 
 ## ☁️ Production (Supabase + Vercel)
 
-1. [Supabase](https://supabase.com) — connection string (pooler port **6543**).
-2. Vercel — env **`DATABASE_URL`**.
-3. GitHub Actions **deploy.yml** (optional): secrets `DATABASE_URL`, `VERCEL_*`, optional `RUN_SEED=true`.
+1. **Supabase** — [Database → URI](https://supabase.com/dashboard) (пароль БД).
+2. **Vercel → Settings → Environment Variables → Production** — добавь **`DATABASE_URL`** _или_ **`POSTGRES_URL`** (из интеграции Supabase). Без этого на проде будет «БД недоступна».
+3. **Один раз** миграции + сиды (локально с тем же URL или GitHub secret + Deploy workflow):
+   `bun run db:migrate:pg` → `bun run db:seed:pg`
+4. **Redeploy** после смены env.
 
-See [env.example.txt](./env.example.txt).
+**Если логин пишет «Проверьте миграции»:** нет переменной Postgres в **Production**; не прогнаны миграции; неверный пароль в URI. Смотри логи функции в Vercel → Logs.
+
+См. **[env.example](./env.example)**.
 
 **Docker (host / VPS):**
 

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDbContext } from "@/db";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 import * as schemaSqlite from "@/db/schema";
 import * as schemaPg from "@/db/schema.pg";
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/lib/session";

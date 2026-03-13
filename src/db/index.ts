@@ -8,6 +8,7 @@ import { dirname } from "path";
 import {
   getPostgresConnectionString,
   isPostgresConnectionEnv,
+  postgresNeedsSsl,
 } from "@/lib/postgresUrl";
 import type { SqliteConn } from "@/lib/sqliteConn";
 
@@ -70,10 +71,17 @@ export async function getSqlite() {
 export async function getPgPool(): Promise<Pool> {
   if (!isPostgres()) throw new Error("PostgreSQL URL не задан");
   if (!_pool) {
+    const connectionString = getPostgresConnectionString();
     _pool = new Pool({
-      connectionString: getPostgresConnectionString(),
-      max: 5,
-      connectionTimeoutMillis: 10_000,
+      connectionString,
+      // Serverless: меньше висящих коннектов; пулер Supabase всё равно пулит
+      max: process.env.VERCEL === "1" ? 3 : 5,
+      connectionTimeoutMillis: 20_000,
+      idleTimeoutMillis: process.env.VERCEL === "1" ? 10_000 : 30_000,
+      // Supabase без этого на Vercel часто даёт ECONNREFUSED / SSL
+      ...(postgresNeedsSsl(connectionString)
+        ? { ssl: { rejectUnauthorized: false } }
+        : {}),
     });
   }
   return _pool;
