@@ -5,7 +5,7 @@
   &#8285;
   <a href="https://github.com/advayta108/ts-response-service-example/actions/workflows/deploy.yml"><img src="https://github.com/advayta108/ts-response-service-example/actions/workflows/deploy.yml/badge.svg" alt="Deploy" /></a>
   &#8285;
-  <a href="https://app.fossa.com/projects/custom%2B41348%2Fgithub.com%2Fadvayta108%2Fts-response-service-example?ref=badge_shield"><img src="https://app.fossa.com/api/projects/custom%2B41348%2Fgithub.com%2Fadvayta108%2Fts-response-service-example.svg?type=shield" alt="FOSSA" /></a>
+  <a href="https://app.fossa.com/projects/custom%2B41348%2Fgithub.com%2Fadvayta108%2Fts-response-service-example"><img src="https://img.shields.io/badge/FOSSA-compliance-289E6D?style=flat-square&logo=fossa&logoColor=white" alt="FOSSA" /></a>
   &#8285;
   <a href="https://prettier.io/"><img src="https://img.shields.io/badge/code_style-prettier-ff69b4?style=flat-square&logo=prettier&logoColor=white" alt="Prettier" /></a>
 </p>

@@ -1,5 +1,3 @@
-import { Database } from "bun:sqlite";
-import { drizzle as drizzleSqlite } from "drizzle-orm/bun-sqlite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schemaSqlite from "./schema";
@@ -10,8 +8,8 @@ import {
   getPostgresConnectionString,
   isPostgresConnectionEnv,
 } from "@/lib/postgresUrl";
+import type { SqliteConn } from "@/lib/sqliteConn";
 
-/** Путь к SQLite; при Postgres URL в DATABASE_URL не используем его как путь к файлу. */
 const dbPath = (() => {
   const u = process.env.DATABASE_URL ?? "";
   if (u.startsWith("postgres://") || u.startsWith("postgresql://"))
@@ -23,8 +21,8 @@ export function isPostgres(): boolean {
   return isPostgresConnectionEnv();
 }
 
-let _sqliteDb: ReturnType<typeof drizzleSqlite> | null = null;
-let _sqlite: Database | null = null;
+let _sqliteDb: unknown = null;
+let _sqlite: unknown = null;
 let _pool: Pool | null = null;
 let _pgDb: ReturnType<typeof drizzlePg> | null = null;
 
@@ -33,13 +31,16 @@ function ensureDir(filePath: string) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
-/** SQLite (локально / Docker без DATABASE_URL postgres). */
-export function getDb() {
+async function loadSqliteDb() {
   if (isPostgres())
     throw new Error(
-      "getDb() sync только для SQLite; используйте getDbContext()"
+      "SQLite недоступен при Postgres; используйте getDbContext()"
     );
   if (!_sqliteDb) {
+    const { Database } = await import(/* webpackIgnore: true */ "bun:sqlite");
+    const { drizzle: drizzleSqlite } = await import(
+      /* webpackIgnore: true */ "drizzle-orm/bun-sqlite"
+    );
     ensureDir(dbPath);
     _sqlite = new Database(dbPath, { create: true });
     try {
@@ -48,14 +49,18 @@ export function getDb() {
       /* ignore */
     }
     _sqlite.exec("PRAGMA foreign_keys = ON;");
-    _sqliteDb = drizzleSqlite(_sqlite, { schema: schemaSqlite });
+    _sqliteDb = drizzleSqlite(_sqlite as never, { schema: schemaSqlite });
   }
   return _sqliteDb;
 }
 
-export function getSqlite(): Database {
+export async function getDb() {
+  return loadSqliteDb();
+}
+
+export async function getSqlite() {
   if (isPostgres()) throw new Error("getSqlite недоступен при PostgreSQL");
-  getDb();
+  await loadSqliteDb();
   return _sqlite!;
 }
 
@@ -81,8 +86,8 @@ export async function getPgDrizzle() {
 export type DbContext =
   | {
       driver: "sqlite";
-      db: ReturnType<typeof drizzleSqlite>;
-      sqlite: Database;
+      db: Awaited<ReturnType<typeof loadSqliteDb>>;
+      sqlite: SqliteConn; // runtime: Bun Database
       schema: typeof schemaSqlite;
     }
   | {
@@ -100,13 +105,14 @@ export async function getDbContext(): Promise<DbContext> {
   }
   if (process.env.VERCEL === "1") {
     throw new Error(
-      "Vercel: задайте DATABASE_URL или POSTGRES_URL / POSTGRES_URL_NON_POOLING (Supabase). В проде без Postgres вход не работает."
+      "Vercel: задайте DATABASE_URL или POSTGRES_URL* (Supabase)."
     );
   }
+  const db = await loadSqliteDb();
   return {
     driver: "sqlite",
-    db: getDb(),
-    sqlite: getSqlite(),
+    db,
+    sqlite: _sqlite as SqliteConn,
     schema: schemaSqlite,
   };
 }

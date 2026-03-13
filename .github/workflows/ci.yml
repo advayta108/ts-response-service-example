@@ -37,6 +37,9 @@ jobs:
         run: bun run db:migrate
 
       - name: Build
+        env:
+          # Чтобы в Node-сборке не вызывался динамический import(bun:sqlite) при прогоне API
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
         run: bun run build
 
   deploy-docker:
