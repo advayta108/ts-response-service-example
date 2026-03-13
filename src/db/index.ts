@@ -23,7 +23,7 @@ export function isPostgres(): boolean {
 }
 
 let _sqliteDb: BunSQLiteDatabase<typeof schemaSqlite> | null = null;
-let _sqlite: SqliteConn & { exec: (sql: string) => void } | null = null;
+let _sqlite: (SqliteConn & { exec: (sql: string) => void }) | null = null;
 let _pool: Pool | null = null;
 let _pgDb: ReturnType<typeof drizzlePg> | null = null;
 
