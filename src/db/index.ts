@@ -1,4 +1,5 @@
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
+import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { Pool } from "pg";
 import * as schemaSqlite from "./schema";
 import * as schemaPg from "./schema.pg";
@@ -21,8 +22,8 @@ export function isPostgres(): boolean {
   return isPostgresConnectionEnv();
 }
 
-let _sqliteDb: unknown = null;
-let _sqlite: unknown = null;
+let _sqliteDb: BunSQLiteDatabase<typeof schemaSqlite> | null = null;
+let _sqlite: SqliteConn & { exec: (sql: string) => void } | null = null;
 let _pool: Pool | null = null;
 let _pgDb: ReturnType<typeof drizzlePg> | null = null;
 
@@ -42,7 +43,9 @@ async function loadSqliteDb() {
       /* webpackIgnore: true */ "drizzle-orm/bun-sqlite"
     );
     ensureDir(dbPath);
-    _sqlite = new Database(dbPath, { create: true });
+    _sqlite = new Database(dbPath, { create: true }) as SqliteConn & {
+      exec: (sql: string) => void;
+    };
     try {
       _sqlite.exec("PRAGMA journal_mode = WAL;");
     } catch {
@@ -112,7 +115,7 @@ export async function getDbContext(): Promise<DbContext> {
   return {
     driver: "sqlite",
     db,
-    sqlite: _sqlite as SqliteConn,
+    sqlite: _sqlite!,
     schema: schemaSqlite,
   };
 }
