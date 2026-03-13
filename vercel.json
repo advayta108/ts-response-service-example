@@ -1,0 +1,6 @@
+{
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "framework": "nextjs",
+  "comment": "Полный API с SQLite на Vercel не рекомендуется — используйте Docker или Postgres."
+}
