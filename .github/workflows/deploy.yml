@@ -1,0 +1,44 @@
+# Миграции Supabase + деплой Vercel при пуше в main
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrate-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Migrate PostgreSQL (Supabase)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: bun run db:migrate:pg
+
+      - name: Seed (optional, secret RUN_SEED=true)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RUN_SEED: ${{ secrets.RUN_SEED }}
+        run: |
+          if [ "$RUN_SEED" = "true" ]; then bun run db:seed:pg; fi
+
+      - name: Deploy Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: "--prod"
+          scope: ${{ secrets.VERCEL_ORG_ID }}

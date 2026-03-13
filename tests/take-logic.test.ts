@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 
-/** Логика: успех только если одна строка обновлена (имитация SQLite changes) */
 function simulateTake(
   rows: Map<number, { status: string; assignedTo: number }>,
   id: number,
@@ -27,8 +26,8 @@ describe("take race", () => {
 describe("validation", () => {
   test("create request requires all fields", () => {
     const body = { clientName: "a", phone: "", address: "c", problemText: "d" };
-    const ok = ["clientName", "phone", "address", "problemText"].every(
-      (k) => String((body as Record<string, string>)[k] ?? "").trim()
+    const ok = ["clientName", "phone", "address", "problemText"].every((k) =>
+      String((body as Record<string, string>)[k] ?? "").trim()
     );
     expect(ok).toBe(false);
   });

@@ -1,40 +1,75 @@
 import { NextResponse } from "next/server";
-import { getSqlite } from "@/db";
+import { getDbContext } from "@/db";
 import { getSessionUserId } from "@/lib/session";
-import { getDb } from "@/db";
-import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { broadcast } from "@/lib/realtime";
+import { toastDone } from "@/lib/toastMessages";
+import * as schemaSqlite from "@/db/schema";
+import * as schemaPg from "@/db/schema.pg";
 
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await getSessionUserId();
-  if (!userId)
-    return NextResponse.json({ error: "Требуется вход" }, { status: 401 });
-  const db = getDb();
-  const u = db.select().from(users).where(eq(users.id, userId)).get();
-  if (!u || u.role !== "master")
-    return NextResponse.json({ error: "Только мастер" }, { status: 403 });
+  try {
+    const userId = await getSessionUserId();
+    if (!userId)
+      return NextResponse.json({ error: "Требуется вход" }, { status: 401 });
+    const ctx = await getDbContext();
+    const u =
+      ctx.driver === "pg"
+        ? (
+            await ctx.db
+              .select()
+              .from(schemaPg.users)
+              .where(eq(schemaPg.users.id, userId))
+              .limit(1)
+          )[0]
+        : ctx.db
+            .select()
+            .from(schemaSqlite.users)
+            .where(eq(schemaSqlite.users.id, userId))
+            .get();
+    if (!u || u.role !== "master")
+      return NextResponse.json({ error: "Только мастер" }, { status: 403 });
 
-  const { id: idStr } = await params;
-  const id = parseInt(idStr, 10);
-  if (!Number.isFinite(id))
-    return NextResponse.json({ error: "Некорректный id" }, { status: 400 });
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
+    if (!Number.isFinite(id))
+      return NextResponse.json({ error: "Некорректный id" }, { status: 400 });
 
-  const now = Math.floor(Date.now() / 1000);
-  const sqlite = getSqlite();
-  const r = sqlite
-    .prepare(
-      `UPDATE requests SET status = 'done', updated_at = ? 
-       WHERE id = ? AND status = 'in_progress' AND assigned_to = ?`
-    )
-    .run(now, id, userId);
+    const now = new Date();
+    const nowSec = Math.floor(now.getTime() / 1000);
+    let changes = 0;
+    if (ctx.driver === "pg") {
+      const r = await ctx.pool.query(
+        `UPDATE requests SET status = 'done', updated_at = $1
+         WHERE id = $2 AND status = 'in_progress' AND assigned_to = $3`,
+        [now, id, userId]
+      );
+      changes = r.rowCount ?? 0;
+    } else {
+      const r = ctx.sqlite.run(
+        `UPDATE requests SET status = 'done', updated_at = ?
+         WHERE id = ? AND status = 'in_progress' AND assigned_to = ?`,
+        [nowSec, id, userId]
+      );
+      changes = r.changes;
+    }
 
-  if (r.changes === 0)
+    if (!changes)
+      return NextResponse.json(
+        { error: "Завершить можно только свою заявку в работе" },
+        { status: 400 }
+      );
+    const toast = toastDone(id, u.name);
+    broadcast({ type: "dispatcher_toast", message: toast });
+    return NextResponse.json({ ok: true, toast });
+  } catch (e) {
+    console.error(e);
     return NextResponse.json(
-      { error: "Завершить можно только свою заявку в работе" },
-      { status: 400 }
+      { error: "Сервис временно недоступен" },
+      { status: 503 }
     );
-  return NextResponse.json({ ok: true });
+  }
 }

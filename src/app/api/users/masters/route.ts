@@ -1,10 +1,26 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getDbContext } from "@/db";
+import * as schemaSqlite from "@/db/schema";
+import * as schemaPg from "@/db/schema.pg";
 
 export async function GET() {
-  const db = getDb();
-  const rows = db.select().from(users).where(eq(users.role, "master")).all();
-  return NextResponse.json(rows.map((r) => ({ id: r.id, name: r.name })));
+  try {
+    const ctx = await getDbContext();
+    const rows =
+      ctx.driver === "pg"
+        ? await ctx.db
+            .select()
+            .from(schemaPg.users)
+            .where(eq(schemaPg.users.role, "master"))
+        : ctx.db
+            .select()
+            .from(schemaSqlite.users)
+            .where(eq(schemaSqlite.users.role, "master"))
+            .all();
+    return NextResponse.json(rows);
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "БД" }, { status: 503 });
+  }
 }

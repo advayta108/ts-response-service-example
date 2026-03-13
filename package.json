@@ -7,27 +7,35 @@
     "build": "bun run --bun next build",
     "start": "bun run --bun next start",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node ./node_modules/tsx/dist/cli.mjs scripts/migrate.ts",
-    "db:seed": "node ./node_modules/tsx/dist/cli.mjs scripts/seed.ts",
-    "test": "bun test"
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:migrate:pg": "bun run scripts/migrate-pg.ts",
+    "db:seed": "bun run scripts/seed.ts",
+    "db:seed:pg": "bun run scripts/seed-pg.ts",
+    "test": "bun test tests",
+    "lint": "eslint . --max-warnings 0",
+    "lint:prettier": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml,css}\" --ignore-path .gitignore",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml,css}\" --ignore-path .gitignore"
   },
   "dependencies": {
-    "better-sqlite3": "^11.8.1",
     "drizzle-orm": "^0.39.3",
     "next": "^15.1.0",
+    "pg": "^8.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
-    "@types/better-sqlite3": "^7.6.12",
     "@types/bun": "latest",
     "@types/node": "^22.10.0",
+    "@types/pg": "^8.18.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "drizzle-kit": "^0.30.4",
     "tailwindcss": "^4.0.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "prettier": "^3.4.2",
+    "eslint": "^9.16.0",
+    "typescript-eslint": "^8.18.0",
+    "@eslint/js": "^9.16.0"
   }
 }

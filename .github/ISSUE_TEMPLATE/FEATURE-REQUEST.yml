@@ -1,0 +1,58 @@
+name: "💡 Feature request"
+description: Предложение по улучшению ts-response-service-example
+title: "💡 [Feature] <кратко>"
+labels: ["enhancement"]
+body:
+  - type: input
+    id: start_date
+    attributes:
+      label: "Желаемые сроки"
+      description: Когда было бы удобно начать (необязательно)
+      placeholder: "месяц/год"
+    validations:
+      required: false
+  - type: textarea
+    id: implementation_pr
+    attributes:
+      label: "Связанный PR"
+      description: Если уже есть черновик PR — вставьте ссылку.
+      placeholder: "https://github.com/advayta108/ts-response-service-example/pull/<id>"
+    validations:
+      required: false
+  - type: textarea
+    id: reference_issues
+    attributes:
+      label: "Связанные issues"
+      description: Номера issues для контекста.
+      placeholder: "#123, #456"
+    validations:
+      required: false
+  - type: textarea
+    id: summary
+    attributes:
+      label: "Кратко"
+      description: Что нужно и зачем.
+      placeholder: "Опишите идею."
+    validations:
+      required: true
+  - type: textarea
+    id: basic_example
+    attributes:
+      label: "Критерии готовности"
+      description: Сценарии / ожидаемое поведение.
+      placeholder: "- Пользователь может …\n- Система …"
+    validations:
+      required: true
+  - type: textarea
+    id: drawbacks
+    attributes:
+      label: "Риски / ограничения"
+      description: Сложность, миграции, компромиссы.
+    validations:
+      required: true
+  - type: textarea
+    id: unresolved_question
+    attributes:
+      label: "Открытые вопросы"
+    validations:
+      required: false
